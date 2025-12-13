@@ -1,0 +1,70 @@
+\documentclass[lettersize,journal]{IEEEtran}
+\usepackage{amsmath,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{cite}
+\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+
+\begin{document}
+
+\title{Meme Template Classification Using Transfer Learning (MobileNetV2)}
+
+\author{Wu RenYu; Zhou Ziqi}  % TODO: replace with your team member names + IDs
+
+\markboth{The final project report of computer vision, September 2025}%
+{Wu \MakeLowercase{\textit{et al.}}: Meme Template Classification Using Transfer Learning}
+
+\IEEEpubid{Macau University of Science and Technology, CS460/ EIE460/ SE460}
+\maketitle
+
+\begin{abstract}
+Memes are widely used in online communities and can convey sentiment quickly through images. This project studies a lightweight image classification task: given a meme image, predict its template category (e.g., Pepe, Wojak, Doge, etc.). We adopt transfer learning with a MobileNetV2 backbone pretrained on ImageNet and fine-tune it on a small dataset with standard data augmentation. Experiments report accuracy and macro-F1 on a held-out test split, and we visualize the confusion matrix to analyze failure cases. GitHub URL: \url{<PUT_YOUR_GITHUB_URL_HERE>}
+\end{abstract}
+
+\begin{IEEEkeywords}
+Image classification, transfer learning, MobileNetV2, meme template, computer vision.
+\end{IEEEkeywords}
+
+\section{Introduction}
+This work aims to classify meme images into a set of predefined template categories. The main challenges are high intra-class variation (different captions, styles, crops) and limited labeled data. We propose a simple transfer learning baseline based on MobileNetV2 to achieve good performance with low computational cost.
+
+\section{Related work}
+Convolutional neural networks (CNNs) are commonly used for image classification. With small datasets, transfer learning from large-scale pretrained models (e.g., ImageNet) is a practical approach, where only the classifier head (and optionally some backbone layers) is fine-tuned.
+
+\section{Technical Solution}
+We use MobileNetV2 pretrained on ImageNet and replace the final classifier layer with a linear layer of size $C$ (the number of classes). The input images are resized to $224 \times 224$ and normalized with ImageNet statistics. During training, we apply augmentation including random horizontal flip, small rotation, and color jitter. The model is optimized with cross-entropy loss and Adam.
+
+\section{Experiments}
+\subsection{Dataset}
+We organize images into folders by class and split them into train/validation/test sets. The dataset size is about 300--800 images in total, with 50--100 images per class (depending on the final collected data).
+
+\subsection{Setup}
+We train for 10--20 epochs with batch size 32 and learning rate $1 \times 10^{-4}$. We evaluate using accuracy and macro-F1. We also report a confusion matrix for qualitative analysis.
+
+\section{Discussion}
+The method is simple and efficient, and it works well when classes have distinguishable visual patterns. Limitations include sensitivity to dataset bias (e.g., specific sources or styles) and confusion between visually similar templates. Future work can explore stronger augmentations, better data collection, and larger models if needed.
+
+\section{Conclusion}
+We implemented a meme template classifier based on MobileNetV2 transfer learning. The pipeline includes dataset preparation, training, evaluation, and visualization. The results demonstrate that a lightweight pretrained model can achieve reasonable performance on a small dataset.
+
+\section{Description of member contributions}
+Zhou Ziqi: dataset collection/cleaning; method explanation and presentation slides.\\
+Wu RenYu: model training; evaluation and visualization; code integration.
+
+\begin{thebibliography}{1}
+\bibliographystyle{IEEEtran}
+\bibitem{mobilenetv2}
+M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, and L.-C. Chen, ``MobileNetV2: Inverted Residuals and Linear Bottlenecks,'' in \textit{CVPR}, 2018.
+\bibitem{torchvision}
+TorchVision, ``PyTorch domain library for computer vision,'' \url{https://github.com/pytorch/vision}.
+\end{thebibliography}
+
+\end{document}
+
