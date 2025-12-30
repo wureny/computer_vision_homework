@@ -12,7 +12,7 @@ The implementation targets a **normal undergraduate level**: transfer learning w
 Install:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -44,7 +44,7 @@ data/raw/
 Then run:
 
 ```bash
-python prepare_dataset.py --raw_dir data/raw --out_dir data --train 0.8 --val 0.1 --test 0.1
+python3 prepare_dataset.py --raw_dir data/raw --out_dir data --train 0.8 --val 0.1 --test 0.1
 ```
 
 Option B: manually provide:
@@ -78,10 +78,16 @@ python3 train.py --data_dir data/demo --epochs 10 --batch_size 16 --lr 1e-4 --fr
 python3 eval.py --data_dir data/demo --weights pretrained/mobilenetv2_meme_best.pt --out_dir outputs/eval_demo
 ```
 
+Or simply run:
+
+```bash
+bash scripts/quick_demo.sh
+```
+
 ### Train (also produces pretrained weights)
 
 ```bash
-python train.py --data_dir data --epochs 15 --batch_size 32 --lr 1e-4
+python3 train.py --data_dir data --epochs 15 --batch_size 32 --lr 1e-4
 ```
 
 Outputs (per run) are saved under `outputs/`.
@@ -89,13 +95,13 @@ Outputs (per run) are saved under `outputs/`.
 ### Test / Evaluate
 
 ```bash
-python eval.py --data_dir data --weights pretrained/mobilenetv2_meme_best.pt
+python3 eval.py --data_dir data --weights pretrained/mobilenetv2_meme_best.pt
 ```
 
 ### Predict a single image
 
 ```bash
-python predict.py --weights pretrained/mobilenetv2_meme_best.pt --image path/to/image.jpg
+python3 predict.py --weights pretrained/mobilenetv2_meme_best.pt --image path/to/image.jpg
 ```
 
 ## Notes
