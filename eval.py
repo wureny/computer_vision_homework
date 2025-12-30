@@ -1,4 +1,6 @@
 import argparse
+import json
+import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -90,6 +92,20 @@ def main() -> None:
     plt.savefig(fig_path, dpi=200)
     plt.close()
     print("Saved:", fig_path)
+
+    metrics = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "data_dir": args.data_dir,
+        "weights": args.weights,
+        "accuracy": float(acc),
+        "macro_f1": float(f1),
+        "num_classes": int(len(class_to_idx)),
+        "classes": [id2class[i] for i in labels_sorted],
+        "confusion_matrix_png": fig_path.as_posix(),
+    }
+    metrics_path = out_dir / "metrics.json"
+    metrics_path.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
+    print("Saved:", metrics_path)
 
 
 if __name__ == "__main__":

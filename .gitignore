@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 env/
+.venv*/
 
 data/raw/
 data/train/
@@ -19,6 +20,10 @@ data/*.tar.gz
 data/*.tgz
 outputs/
 !outputs/.gitkeep
+
+.torch_cache/
+.mplconfig/
+.cache/
 
 *.pdf
 !computervision.pdf

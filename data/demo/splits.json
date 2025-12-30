@@ -1,0 +1,17 @@
+{
+  "doge": {
+    "train": 6,
+    "val": 1,
+    "test": 2
+  },
+  "pepe": {
+    "train": 7,
+    "val": 1,
+    "test": 2
+  },
+  "wojak": {
+    "train": 7,
+    "val": 1,
+    "test": 2
+  }
+}

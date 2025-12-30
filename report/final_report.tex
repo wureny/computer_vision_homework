@@ -10,6 +10,7 @@
 \usepackage{verbatim}
 \usepackage{graphicx}
 \usepackage{cite}
+\usepackage{booktabs}
 \hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
 
 \begin{document}
@@ -24,8 +25,10 @@
 \IEEEpubid{Macau University of Science and Technology, CS460/ EIE460/ SE460}
 \maketitle
 
+\input{results.tex}
+
 \begin{abstract}
-Memes are widely used in online communities and can convey sentiment quickly through images. This project studies a lightweight image classification task: given a meme image, predict its template category (e.g., Pepe, Wojak, Doge, etc.). We adopt transfer learning with a MobileNetV2 backbone pretrained on ImageNet and fine-tune it on a small dataset with standard data augmentation. Experiments report accuracy and macro-F1 on a held-out test split, and we visualize the confusion matrix to analyze failure cases. GitHub URL: \url{<PUT_YOUR_GITHUB_URL_HERE>}
+Memes are widely used in online communities and can convey sentiment quickly through images. This project studies a lightweight image classification task: given a meme image, predict its template category. We adopt transfer learning with a MobileNetV2 backbone pretrained on ImageNet and fine-tune it on a small dataset with standard data augmentation. Experiments report an accuracy of \ResultAccuracy{} and a macro-F1 of \ResultMacroFone{} on a held-out test split, and we visualize a confusion matrix to analyze failure cases. GitHub URL: \url{<PUT_YOUR_GITHUB_URL_HERE>}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -33,23 +36,52 @@ Image classification, transfer learning, MobileNetV2, meme template, computer vi
 \end{IEEEkeywords}
 
 \section{Introduction}
-This work aims to classify meme images into a set of predefined template categories. The main challenges are high intra-class variation (different captions, styles, crops) and limited labeled data. We propose a simple transfer learning baseline based on MobileNetV2 to achieve good performance with low computational cost.
+This work aims to classify meme images into a set of predefined template categories (e.g., Pepe, Doge, Wojak). The main challenges are high intra-class variation (different captions, crops, redraw styles) and limited labeled data. We implement a simple and reproducible transfer learning baseline based on MobileNetV2 to achieve reasonable performance with low computational cost.
 
 \section{Related work}
-Convolutional neural networks (CNNs) are commonly used for image classification. With small datasets, transfer learning from large-scale pretrained models (e.g., ImageNet) is a practical approach, where only the classifier head (and optionally some backbone layers) is fine-tuned.
+Convolutional neural networks (CNNs) are widely used for image classification. When labeled data is limited, transfer learning from large-scale pretrained models such as ImageNet is a practical approach: the backbone provides generic visual features and only a small classifier head is fine-tuned for the target categories \cite{torchvision}. MobileNetV2 is an efficient architecture for deployment and fast experimentation \cite{mobilenetv2}.
 
 \section{Technical Solution}
-We use MobileNetV2 pretrained on ImageNet and replace the final classifier layer with a linear layer of size $C$ (the number of classes). The input images are resized to $224 \times 224$ and normalized with ImageNet statistics. During training, we apply augmentation including random horizontal flip, small rotation, and color jitter. The model is optimized with cross-entropy loss and Adam.
+We use MobileNetV2 pretrained on ImageNet and replace the final classifier layer with a linear layer of size $C$ (the number of classes). Input images are resized to $224 \times 224$ and normalized with ImageNet statistics. During training, we apply augmentation including random horizontal flip, small rotation, and color jitter. The model is optimized with cross-entropy loss and Adam.
+
+\subsection{Implementation details}
+The project is implemented in PyTorch/TorchVision. Datasets follow the ImageFolder convention. Training logs, checkpoints, and evaluation outputs are saved under \texttt{outputs/}. The best validation checkpoint is copied to \texttt{pretrained/mobilenetv2\_meme\_best.pt} for convenient testing.
 
 \section{Experiments}
 \subsection{Dataset}
-We organize images into folders by class and split them into train/validation/test sets. The dataset size is about 300--800 images in total, with 50--100 images per class (depending on the final collected data).
+Images are organized into folders by class and split into train/validation/test sets. The demo configuration used in this report contains \ResultNumClasses{} classes: \ResultClasses{}. We follow a fixed random seed for reproducible splitting. The dataset is small and may contain biases (e.g., source website styles); we discuss limitations in Section~\ref{sec:discussion}.
+
+\input{dataset.tex}
 
 \subsection{Setup}
-We train for 10--20 epochs with batch size 32 and learning rate $1 \times 10^{-4}$. We evaluate using accuracy and macro-F1. We also report a confusion matrix for qualitative analysis.
+We train for 10--20 epochs with batch size 16--32 and learning rate $1\times 10^{-4}$. We evaluate using accuracy and macro-F1. In addition, we plot the confusion matrix for qualitative analysis.
+
+\subsection{Results}
+Table~\ref{tab:metrics} reports the main quantitative results. Figure~\ref{fig:cm} visualizes common confusions between classes.
+
+\begin{table}[t]
+\centering
+\caption{Evaluation metrics on the test split.}
+\label{tab:metrics}
+\begin{tabular}{lcc}
+\toprule
+Model & Accuracy & Macro-F1 \\
+\midrule
+MobileNetV2 (transfer learning) & \ResultAccuracy{} & \ResultMacroFone{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{\ResultConfusionMatrix{}}
+\caption{Confusion matrix on the test split.}
+\label{fig:cm}
+\end{figure}
 
 \section{Discussion}
-The method is simple and efficient, and it works well when classes have distinguishable visual patterns. Limitations include sensitivity to dataset bias (e.g., specific sources or styles) and confusion between visually similar templates. Future work can explore stronger augmentations, better data collection, and larger models if needed.
+\label{sec:discussion}
+The method is simple and efficient, and it works well when classes have distinguishable visual patterns. Limitations include sensitivity to dataset bias (e.g., specific sources or styles), label ambiguity (some memes resemble multiple templates), and potential overfitting when the dataset is very small. Future work can explore stronger augmentations, improved data collection, and evaluating on a larger held-out set.
 
 \section{Conclusion}
 We implemented a meme template classifier based on MobileNetV2 transfer learning. The pipeline includes dataset preparation, training, evaluation, and visualization. The results demonstrate that a lightweight pretrained model can achieve reasonable performance on a small dataset.
@@ -57,6 +89,15 @@ We implemented a meme template classifier based on MobileNetV2 transfer learning
 \section{Description of member contributions}
 Zhou Ziqi: dataset collection/cleaning; method explanation and presentation slides.\\
 Wu RenYu: model training; evaluation and visualization; code integration.
+
+\section{Reproducibility}
+To reproduce the reported results, prepare a dataset in ImageFolder format and run the provided scripts:
+\begin{itemize}
+\item Split the dataset: \texttt{python3 prepare\_dataset.py --raw\_dir data/demo/raw --out\_dir data/demo --train 0.7 --val 0.15 --test 0.15}
+\item Train: \texttt{bash scripts/train\_demo.sh} (or \texttt{python3 train.py ...})
+\item Evaluate: \texttt{python3 eval.py --data\_dir data/demo --weights pretrained/mobilenetv2\_meme\_best.pt}
+\end{itemize}
+All evaluation artifacts are written under \texttt{outputs/}.
 
 \begin{thebibliography}{1}
 \bibliographystyle{IEEEtran}
@@ -67,4 +108,3 @@ TorchVision, ``PyTorch domain library for computer vision,'' \url{https://github
 \end{thebibliography}
 
 \end{document}
-
