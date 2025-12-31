@@ -17,6 +17,10 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Notes:
+
+- For macOS, `torch` works well with CPU/MPS; this project sets some cache env vars in scripts to avoid permission issues.
+
 ## 2) Pretrained models
 
 - Put the trained weights here: `pretrained/mobilenetv2_meme_best.pt`
@@ -57,31 +61,23 @@ data/test/<class_name>/*.jpg
 
 ### Teacher/TA quick demo (recommended to include in GitHub)
 
-1) Prepare a small demo dataset:
+The repo already includes a tiny demo dataset under `data/demo/` and a trained weight under `pretrained/`.
 
-- Put a few images per class under `data/demo/raw/<class_name>/*` (e.g. 3--10 images per class).
-- Split it:
-
-```bash
-python3 prepare_dataset.py --raw_dir data/demo/raw --out_dir data/demo --train 0.7 --val 0.15 --test 0.15
-```
-
-2) Train a demo checkpoint and copy to `pretrained/`:
-
-```bash
-python3 train.py --data_dir data/demo --epochs 10 --batch_size 16 --lr 1e-4 --freeze_backbone
-```
-
-3) Evaluate (also saves `metrics.json` + confusion matrix figure under `outputs/`):
-
-```bash
-python3 eval.py --data_dir data/demo --weights pretrained/mobilenetv2_meme_best.pt --out_dir outputs/eval_demo
-```
-
-Or simply run:
+After cloning, the TA can run:
 
 ```bash
 bash scripts/quick_demo.sh
+```
+
+This evaluates `pretrained/mobilenetv2_meme_best.pt` on `data/demo/test` and saves:
+
+- `outputs/eval_demo/metrics.json`
+- `outputs/eval_demo/confusion_matrix.png`
+
+If you want to regenerate the demo split and retrain on it:
+
+```bash
+bash scripts/train_demo.sh
 ```
 
 ### Train (also produces pretrained weights)
@@ -91,6 +87,14 @@ python3 train.py --data_dir data --epochs 15 --batch_size 32 --lr 1e-4
 ```
 
 Outputs (per run) are saved under `outputs/`.
+
+### Full experiments (for report reproduction)
+
+If you have a larger dataset under `data/raw/`, this script runs a more convincing split and an ablation study (freeze vs fine-tune), then updates the auto-filled LaTeX tables:
+
+```bash
+bash scripts/run_full_experiments.sh
+```
 
 ### Test / Evaluate
 

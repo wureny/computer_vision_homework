@@ -1,6 +1,7 @@
 import argparse
 import json
 import time
+import shutil
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -28,8 +29,14 @@ def main() -> None:
     parser.add_argument("--data_dir", type=str, default="data")
     parser.add_argument("--weights", type=str, required=True)
     parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--out_dir", type=str, default="outputs/eval")
+    parser.add_argument(
+        "--errors_dir",
+        type=str,
+        default="",
+        help="If set, copy misclassified images and write errors.json for qualitative analysis.",
+    )
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -42,9 +49,16 @@ def main() -> None:
     if not test_dir.exists():
         raise SystemExit(f"Expected folder not found: {test_dir}")
 
-    test_ds = datasets.ImageFolder(test_dir.as_posix(), transform=make_transforms())
+    class ImageFolderWithPath(datasets.ImageFolder):
+        def __getitem__(self, index: int):
+            image, label = super().__getitem__(index)
+            path, _ = self.samples[index]
+            return image, label, path
+
+    test_ds = ImageFolderWithPath(test_dir.as_posix(), transform=make_transforms())
+    pin_memory = device == "cuda"
     test_loader = DataLoader(
-        test_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True
+        test_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=pin_memory
     )
 
     # Map indices used by ImageFolder(test) to indices used by the trained checkpoint.
@@ -61,12 +75,18 @@ def main() -> None:
     y_true: list[int] = []
     y_pred: list[int] = []
 
-    for images, labels in test_loader:
+    y_prob: list[list[float]] = []
+    paths: list[str] = []
+
+    for images, labels, batch_paths in test_loader:
         images = images.to(device)
         logits = model(images)
+        probs = torch.softmax(logits, dim=1).cpu()
         preds = logits.argmax(dim=1).cpu().tolist()
         y_pred.extend(preds)
         y_true.extend([test_idx_to_ckpt_idx[int(i)] for i in labels.tolist()])
+        y_prob.extend(probs.tolist())
+        paths.extend(list(batch_paths))
 
     acc = accuracy_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred, average="macro")
@@ -103,6 +123,34 @@ def main() -> None:
         "classes": [id2class[i] for i in labels_sorted],
         "confusion_matrix_png": fig_path.as_posix(),
     }
+
+    if args.errors_dir:
+        errors_dir = Path(args.errors_dir)
+        errors_dir.mkdir(parents=True, exist_ok=True)
+        errors: list[dict[str, object]] = []
+        for true_i, pred_i, prob_vec, p in zip(y_true, y_pred, y_prob, paths, strict=True):
+            if int(true_i) == int(pred_i):
+                continue
+            src = Path(p)
+            dst = errors_dir / f"true_{id2class[int(true_i)]}__pred_{id2class[int(pred_i)]}__{src.name}"
+            try:
+                shutil.copy2(src, dst)
+            except Exception:
+                # If copy fails (e.g., permission), still record the path.
+                dst = src
+            errors.append(
+                {
+                    "path": str(src),
+                    "copied_to": str(dst),
+                    "true": id2class[int(true_i)],
+                    "pred": id2class[int(pred_i)],
+                    "pred_confidence": float(max(prob_vec)),
+                }
+            )
+        (errors_dir / "errors.json").write_text(json.dumps(errors, indent=2, ensure_ascii=False), encoding="utf-8")
+        metrics["num_errors"] = int(len(errors))
+        metrics["errors_dir"] = errors_dir.as_posix()
+
     metrics_path = out_dir / "metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
     print("Saved:", metrics_path)

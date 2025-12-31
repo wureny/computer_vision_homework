@@ -28,7 +28,7 @@
 \input{results.tex}
 
 \begin{abstract}
-Memes are widely used in online communities and can convey sentiment quickly through images. This project studies a lightweight image classification task: given a meme image, predict its template category. We adopt transfer learning with a MobileNetV2 backbone pretrained on ImageNet and fine-tune it on a small dataset with standard data augmentation. Experiments report an accuracy of \ResultAccuracy{} and a macro-F1 of \ResultMacroFone{} on a held-out test split, and we visualize a confusion matrix to analyze failure cases. GitHub URL: \url{<PUT_YOUR_GITHUB_URL_HERE>}
+Memes are widely used in online communities and can convey sentiment quickly through images. This project studies a lightweight image classification task: given a meme image, predict its template category. We adopt transfer learning with a MobileNetV2 backbone pretrained on ImageNet and fine-tune it on a small labeled dataset (3 classes, 90 images) with standard data augmentation. Experiments report an accuracy of \ResultAccuracy{} and a macro-F1 of \ResultMacroFone{} on a held-out test split, and we visualize a confusion matrix to analyze failure cases. GitHub URL: \url{<PUT_YOUR_GITHUB_URL_HERE>}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -45,16 +45,16 @@ Convolutional neural networks (CNNs) are widely used for image classification. W
 We use MobileNetV2 pretrained on ImageNet and replace the final classifier layer with a linear layer of size $C$ (the number of classes). Input images are resized to $224 \times 224$ and normalized with ImageNet statistics. During training, we apply augmentation including random horizontal flip, small rotation, and color jitter. The model is optimized with cross-entropy loss and Adam.
 
 \subsection{Implementation details}
-The project is implemented in PyTorch/TorchVision. Datasets follow the ImageFolder convention. Training logs, checkpoints, and evaluation outputs are saved under \texttt{outputs/}. The best validation checkpoint is copied to \texttt{pretrained/mobilenetv2\_meme\_best.pt} for convenient testing.
+The project is implemented in PyTorch/TorchVision. Datasets follow the ImageFolder convention. We use a fixed random seed for data splitting. Training logs, checkpoints, and evaluation outputs are saved under \texttt{outputs/}. The best validation checkpoint is copied to \texttt{pretrained/mobilenetv2\_meme\_best.pt} for convenient testing.
 
 \section{Experiments}
 \subsection{Dataset}
-Images are organized into folders by class and split into train/validation/test sets. The demo configuration used in this report contains \ResultNumClasses{} classes: \ResultClasses{}. We follow a fixed random seed for reproducible splitting. The dataset is small and may contain biases (e.g., source website styles); we discuss limitations in Section~\ref{sec:discussion}.
+Images are organized into folders by class and split into train/validation/test sets. The dataset used in this report contains \ResultNumClasses{} classes: \ResultClasses{}. We use a 0.6/0.2/0.2 split to keep a slightly larger test set. The dataset is still small (and slightly imbalanced across classes), and may contain biases (e.g., source website styles); we discuss limitations in Section~\ref{sec:discussion}.
 
 \input{dataset.tex}
 
 \subsection{Setup}
-We train for 10--20 epochs with batch size 16--32 and learning rate $1\times 10^{-4}$. We evaluate using accuracy and macro-F1. In addition, we plot the confusion matrix for qualitative analysis.
+We train for 25 epochs with batch size 16, learning rate $1\times 10^{-4}$, and weight decay $1\times 10^{-4}$. We evaluate using accuracy and macro-F1. In addition, we plot the confusion matrix for qualitative analysis.
 
 \subsection{Results}
 Table~\ref{tab:metrics} reports the main quantitative results. Figure~\ref{fig:cm} visualizes common confusions between classes.
@@ -79,9 +79,12 @@ MobileNetV2 (transfer learning) & \ResultAccuracy{} & \ResultMacroFone{} \\
 \label{fig:cm}
 \end{figure}
 
+\subsection{Ablation study}
+\input{ablation.tex}
+
 \section{Discussion}
 \label{sec:discussion}
-The method is simple and efficient, and it works well when classes have distinguishable visual patterns. Limitations include sensitivity to dataset bias (e.g., specific sources or styles), label ambiguity (some memes resemble multiple templates), and potential overfitting when the dataset is very small. Future work can explore stronger augmentations, improved data collection, and evaluating on a larger held-out set.
+The method is simple and efficient, and it works well when classes have distinguishable visual patterns. As shown in Table~\ref{tab:ablation}, fine-tuning the backbone improves performance compared with training only a classifier head, which is expected because meme templates can differ by subtle facial contours and texture patterns. Limitations include sensitivity to dataset bias (e.g., specific sources or styles), label ambiguity (some memes resemble multiple templates), and potential overfitting when the dataset is small. Future work can explore stronger augmentations, improved data collection, and evaluating on a larger held-out set.
 
 \section{Conclusion}
 We implemented a meme template classifier based on MobileNetV2 transfer learning. The pipeline includes dataset preparation, training, evaluation, and visualization. The results demonstrate that a lightweight pretrained model can achieve reasonable performance on a small dataset.
@@ -93,9 +96,9 @@ Wu RenYu: model training; evaluation and visualization; code integration.
 \section{Reproducibility}
 To reproduce the reported results, prepare a dataset in ImageFolder format and run the provided scripts:
 \begin{itemize}
-\item Split the dataset: \texttt{python3 prepare\_dataset.py --raw\_dir data/demo/raw --out\_dir data/demo --train 0.7 --val 0.15 --test 0.15}
-\item Train: \texttt{bash scripts/train\_demo.sh} (or \texttt{python3 train.py ...})
-\item Evaluate: \texttt{python3 eval.py --data\_dir data/demo --weights pretrained/mobilenetv2\_meme\_best.pt}
+\item Quick TA test: \texttt{bash scripts/quick\_demo.sh}
+\item Full experiments + ablation (updates the auto-filled tables): \texttt{bash scripts/run\_full\_experiments.sh}
+\item Manual evaluation: \texttt{python3 eval.py --data\_dir data --weights pretrained/mobilenetv2\_meme\_best.pt}
 \end{itemize}
 All evaluation artifacts are written under \texttt{outputs/}.
 

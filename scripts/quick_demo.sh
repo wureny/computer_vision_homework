@@ -9,13 +9,18 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
+PYTHON_BIN="python3"
+if [[ -x "$ROOT_DIR/.venv/bin/python" ]]; then
+  PYTHON_BIN="$ROOT_DIR/.venv/bin/python"
+fi
+
 mkdir -p .torch_cache .mplconfig .cache/fontconfig
 export TORCH_HOME="$ROOT_DIR/.torch_cache"
 export MPLBACKEND=Agg
 export MPLCONFIGDIR="$ROOT_DIR/.mplconfig"
 export XDG_CACHE_HOME="$ROOT_DIR/.cache"
 
-python3 - <<'PY'
+$PYTHON_BIN - <<'PY'
 try:
   import torch  # noqa: F401
   import torchvision  # noqa: F401
@@ -42,7 +47,7 @@ if [[ ! -d "data/demo/test" ]]; then
   exit 1
 fi
 
-python3 eval.py \
+$PYTHON_BIN eval.py \
   --data_dir data/demo \
   --weights pretrained/mobilenetv2_meme_best.pt \
   --out_dir outputs/eval_demo \

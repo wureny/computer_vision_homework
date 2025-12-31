@@ -62,10 +62,17 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--weight_decay", type=float, default=0.0)
+    parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--freeze_backbone", action="store_true", help="Freeze feature extractor.")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out_dir", type=str, default="outputs")
+    parser.add_argument(
+        "--weights_out",
+        type=str,
+        default="pretrained/mobilenetv2_meme_best.pt",
+        help="Where to write the best checkpoint (for TA testing).",
+    )
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -84,8 +91,9 @@ def main() -> None:
     if len(train_ds.classes) < 2:
         raise SystemExit("Need at least 2 classes to train.")
 
+    pin_memory = device == "cuda"
     train_loader = DataLoader(
-        train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True
+        train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=pin_memory
     )
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
@@ -96,7 +104,9 @@ def main() -> None:
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
+    optimizer = torch.optim.Adam(
+        filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.weight_decay
+    )
 
     run_name = time.strftime("run_%Y%m%d_%H%M%S")
     run_dir = Path(args.out_dir) / run_name
@@ -155,10 +165,9 @@ def main() -> None:
             )
 
     # copy best checkpoint into pretrained/ for easy testing
-    pretrained_dir = Path("pretrained")
-    pretrained_dir.mkdir(exist_ok=True)
     src = run_dir / "best.pt"
-    dst = pretrained_dir / "mobilenetv2_meme_best.pt"
+    dst = Path(args.weights_out)
+    dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_bytes(src.read_bytes())
     print("Training finished.")
     print("Best val acc:", best_val_acc)
@@ -167,4 +176,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
