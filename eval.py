@@ -1,3 +1,14 @@
+"""
+Evaluation entry for a trained meme template classifier checkpoint.
+
+Key steps:
+- Load checkpoint (model + class_to_idx)
+- Load ImageFolder dataset from `data_dir/test`
+- Run inference to compute accuracy and macro-F1
+- Save confusion matrix and a machine-readable `metrics.json`
+- (Optional) export misclassified examples for qualitative analysis
+"""
+
 import argparse
 import json
 import time
@@ -14,6 +25,7 @@ from vision_utils import idx_to_class, load_checkpoint
 
 
 def make_transforms() -> transforms.Compose:
+    # Match validation/test preprocessing used during training.
     return transforms.Compose(
         [
             transforms.Resize((224, 224)),
@@ -50,6 +62,7 @@ def main() -> None:
         raise SystemExit(f"Expected folder not found: {test_dir}")
 
     class ImageFolderWithPath(datasets.ImageFolder):
+        # Keep the original file path so we can export error cases later.
         def __getitem__(self, index: int):
             image, label = super().__getitem__(index)
             path, _ = self.samples[index]
@@ -62,6 +75,7 @@ def main() -> None:
     )
 
     # Map indices used by ImageFolder(test) to indices used by the trained checkpoint.
+    # This makes evaluation robust even if folder order differs between train/test.
     if set(test_ds.class_to_idx.keys()) != set(class_to_idx.keys()):
         missing_in_test = sorted(set(class_to_idx.keys()) - set(test_ds.class_to_idx.keys()))
         missing_in_ckpt = sorted(set(test_ds.class_to_idx.keys()) - set(class_to_idx.keys()))
@@ -125,6 +139,7 @@ def main() -> None:
     }
 
     if args.errors_dir:
+        # Save misclassified images so the report can show failure cases.
         errors_dir = Path(args.errors_dir)
         errors_dir.mkdir(parents=True, exist_ok=True)
         errors: list[dict[str, object]] = []

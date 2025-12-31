@@ -1,3 +1,14 @@
+"""
+Dataset preparation script.
+
+This project expects an ImageFolder-style dataset:
+
+  data/raw/<class_name>/*.(jpg|jpeg|png|bmp|webp)
+
+This script splits `raw_dir` into `out_dir/{train,val,test}/<class_name>/` with a fixed seed,
+and writes a summary to `out_dir/splits.json` for reporting.
+"""
+
 import argparse
 import json
 import os
@@ -9,6 +20,7 @@ IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 
 def iter_images(class_dir: Path) -> list[Path]:
+    # Recursively collect supported image files under a class folder.
     images: list[Path] = []
     for p in class_dir.rglob("*"):
         if p.is_file() and p.suffix.lower() in IMG_EXTS:
@@ -17,6 +29,7 @@ def iter_images(class_dir: Path) -> list[Path]:
 
 
 def copy_files(files: list[Path], dst_dir: Path) -> None:
+    # Copy while avoiding filename collisions (different sources may share names).
     dst_dir.mkdir(parents=True, exist_ok=True)
     for src in files:
         dst = dst_dir / src.name
@@ -73,6 +86,7 @@ def main() -> None:
             continue
         random.shuffle(images)
 
+        # Split per class to preserve the label distribution across splits.
         n = len(images)
         n_train = int(n * args.train)
         n_val = int(n * args.val)
@@ -96,4 +110,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

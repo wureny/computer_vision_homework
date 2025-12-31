@@ -1,3 +1,13 @@
+"""
+Training entry for the meme template classifier.
+
+Key steps:
+- Load ImageFolder dataset from `data_dir/train` and `data_dir/val`
+- Build MobileNetV2 (optionally ImageNet-pretrained) and replace the classifier head
+- (Optional) freeze the backbone for a lightweight baseline
+- Train with cross-entropy; save best validation checkpoint and copy it to `pretrained/`
+"""
+
 import argparse
 import json
 import time
@@ -13,6 +23,7 @@ from vision_utils import build_mobilenetv2, save_checkpoint, save_label_map
 
 
 def make_transforms(train: bool) -> transforms.Compose:
+    # Standard ImageNet-style preprocessing; simple augmentations for small datasets.
     if train:
         return transforms.Compose(
             [
@@ -97,8 +108,10 @@ def main() -> None:
     )
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
+    # Transfer learning: start from ImageNet-pretrained MobileNetV2, replace final classifier.
     model = build_mobilenetv2(num_classes=len(train_ds.classes), pretrained=True)
     if args.freeze_backbone:
+        # Baseline: only train the classifier head.
         for p in model.features.parameters():
             p.requires_grad = False
     model.to(device)
@@ -164,7 +177,7 @@ def main() -> None:
                 meta={"epoch": epoch, "val_acc": val_acc},
             )
 
-    # copy best checkpoint into pretrained/ for easy testing
+    # Copy best checkpoint into a stable path for TA testing / inference scripts.
     src = run_dir / "best.pt"
     dst = Path(args.weights_out)
     dst.parent.mkdir(parents=True, exist_ok=True)

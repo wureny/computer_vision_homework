@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+"""
+Model utilities for the meme template classification project.
+
+- `build_mobilenetv2`: create MobileNetV2 and replace the classifier head
+- `save_checkpoint` / `load_checkpoint`: store and restore model weights + label mapping
+"""
+
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +23,7 @@ class ModelBundle:
 
 
 def build_mobilenetv2(num_classes: int, pretrained: bool = True) -> torch.nn.Module:
+    # When `pretrained=True`, TorchVision may download ImageNet weights on first use.
     weights = models.MobileNet_V2_Weights.DEFAULT if pretrained else None
     model = models.mobilenet_v2(weights=weights)
     in_features = model.classifier[1].in_features
@@ -60,4 +68,3 @@ def save_label_map(path: str | Path, class_to_idx: dict[str, int]) -> None:
 
 def idx_to_class(class_to_idx: dict[str, int]) -> dict[int, str]:
     return {v: k for k, v in class_to_idx.items()}
-

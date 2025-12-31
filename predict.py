@@ -1,3 +1,12 @@
+"""
+Single-image inference script.
+
+Given `--weights` and an `--image` path, this script:
+- loads the trained checkpoint
+- applies the same ImageNet normalization as training
+- prints top-1 predicted class and probability
+"""
+
 import argparse
 from pathlib import Path
 
@@ -9,6 +18,7 @@ from vision_utils import idx_to_class, load_checkpoint
 
 
 def make_transforms() -> transforms.Compose:
+    # Match evaluation preprocessing.
     return transforms.Compose(
         [
             transforms.Resize((224, 224)),
@@ -23,6 +33,7 @@ def predict_one(model: torch.nn.Module, image_path: Path, device: str) -> torch.
     img = Image.open(image_path).convert("RGB")
     x = make_transforms()(img).unsqueeze(0).to(device)
     logits = model(x)
+    # Return probabilities for all classes.
     probs = torch.softmax(logits, dim=1).squeeze(0).cpu()
     return probs
 
@@ -54,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
