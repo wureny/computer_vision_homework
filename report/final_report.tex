@@ -39,7 +39,11 @@ Image classification, transfer learning, MobileNetV2, meme template, computer vi
 This work aims to classify meme images into a set of predefined template categories (e.g., Pepe, Doge, Wojak). The main challenges are high intra-class variation (different captions, crops, redraw styles) and limited labeled data. We implement a simple and reproducible transfer learning baseline based on MobileNetV2 to achieve reasonable performance with low computational cost.
 
 \section{Related work}
-Convolutional neural networks (CNNs) are widely used for image classification. When labeled data is limited, transfer learning from large-scale pretrained models such as ImageNet is a practical approach: the backbone provides generic visual features and only a small classifier head is fine-tuned for the target categories \cite{torchvision}. MobileNetV2 is an efficient architecture for deployment and fast experimentation \cite{mobilenetv2}.
+Meme template recognition can be formulated as a standard image classification problem, but it often exhibits traits of \emph{fine-grained} recognition: intra-class variation is large (captions, redraw styles, crops) while inter-class differences may be subtle (similar facial contours or textures). Convolutional neural networks (CNNs) remain a strong baseline for such visual categorization tasks. Classic backbones such as ResNet \cite{resnet} and more recent efficient architectures (e.g., EfficientNet \cite{efficientnet}) are commonly used as feature extractors, typically followed by a linear classifier for the downstream labels.
+
+When labeled data is limited, transfer learning from large-scale pretrained models (most commonly ImageNet) is widely adopted. In this setting, one either (i) freezes the backbone and trains only a small classifier head, or (ii) fine-tunes part or all of the backbone to adapt features to the target domain. In our experiments we explicitly compare these two strategies (Table~\ref{tab:ablation}), which is consistent with common practice in small-data classification.
+
+Beyond supervised CNN transfer learning, two additional directions are related. First, metric learning methods (e.g., Siamese-style or triplet-loss training) aim to learn embeddings where visually similar instances are close, which can be beneficial when class boundaries are ambiguous or when only a few examples per class are available \cite{siamese}. Second, large-scale vision transformers and vision-language models provide strong pretrained representations; models such as ViT \cite{vit} and CLIP \cite{clip} can be used for feature extraction or even zero-shot classification, offering an attractive alternative when collecting labeled data is difficult. In this project, we focus on a lightweight and reproducible supervised baseline based on MobileNetV2 \cite{mobilenetv2} implemented via TorchVision \cite{torchvision}.
 
 \section{Technical Solution}
 We use MobileNetV2 pretrained on ImageNet and replace the final classifier layer with a linear layer of size $C$ (the number of classes). Input images are resized to $224 \times 224$ and normalized with ImageNet statistics. During training, we apply augmentation including random horizontal flip, small rotation, and color jitter. The model is optimized with cross-entropy loss and Adam.
@@ -106,6 +110,16 @@ All evaluation artifacts are written under \texttt{outputs/}.
 \bibliographystyle{IEEEtran}
 \bibitem{mobilenetv2}
 M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, and L.-C. Chen, ``MobileNetV2: Inverted Residuals and Linear Bottlenecks,'' in \textit{CVPR}, 2018.
+\bibitem{resnet}
+K. He, X. Zhang, S. Ren, and J. Sun, ``Deep Residual Learning for Image Recognition,'' in \textit{CVPR}, 2016.
+\bibitem{efficientnet}
+M. Tan and Q. Le, ``EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks,'' in \textit{ICML}, 2019.
+\bibitem{siamese}
+G. Koch, R. Zemel, and R. Salakhutdinov, ``Siamese Neural Networks for One-shot Image Recognition,'' in \textit{ICML Deep Learning Workshop}, 2015.
+\bibitem{vit}
+A. Dosovitskiy \textit{et al.}, ``An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale,'' in \textit{ICLR}, 2021.
+\bibitem{clip}
+A. Radford \textit{et al.}, ``Learning Transferable Visual Models From Natural Language Supervision,'' in \textit{ICML}, 2021.
 \bibitem{torchvision}
 TorchVision, ``PyTorch domain library for computer vision,'' \url{https://github.com/pytorch/vision}.
 \end{thebibliography}
