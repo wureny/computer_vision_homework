@@ -10,7 +10,6 @@ venv/
 env/
 .venv*/
 
-data/raw/
 data/train/
 data/val/
 data/test/
